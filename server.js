@@ -24,6 +24,8 @@ app.use(passport.initialize());
 
 var router = express.Router();
 
+var requireAuth = authJwtController.isAuthenticated; // Just for adding the jwt auth to Movies
+
 function getJSONObjectForMovieRequirement(req) {
     var json = {
         headers: "No headers",
