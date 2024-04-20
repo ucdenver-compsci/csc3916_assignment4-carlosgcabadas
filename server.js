@@ -87,6 +87,75 @@ router.post('/signin', function (req, res) {
     })
 });
 
+
+// Get and post but for all movies
+router.route('/movies')
+
+    .post(requireAuth, function(req, res) {
+        var movie = new Movie(req.body);
+        movie.save(function(err, savedMovie) {
+            if (err) {
+                res.status(400).json({ success: false, message: 'Failed to create movie', error: err });
+            } else {
+                res.status(201).json({ success: true, message: 'Movie created successfully', movie: savedMovie });
+            }
+        });
+    })
+
+    .get(requireAuth, function(req, res) {
+        Movie.find({}, function(err, movies) {
+            if (err) {
+                res.status(500).json({ success: false, message: 'Failed to retrieve movies', error: err });
+            } else {
+                res.status(200).json({ success: true, movies: movies });
+            }
+        });
+    });
+
+
+
+
+// Routes but by title
+router.route('/movies/:title')
+    .get(requireAuth, function(req, res) {
+        var title = req.params.title;
+        Movie.findOne({ title: title }, function(err, movie) {
+            if (err) {
+                res.status(500).json({ success: false, message: 'Internal server error', error: err });
+            } else if (!movie) {
+                res.status(404).json({ success: false, message: 'Movie not found' });
+            } else {
+                res.status(200).json({ success: true, movie: movie });
+            }
+        });
+    })
+
+    .put(requireAuth, function(req, res) {
+        var title = req.params.title;
+        Movie.findOneAndUpdate({ title: title }, req.body, { new: true }, function(err, updatedMovie) {
+            if (err) {
+                res.status(400).json({ success: false, message: 'Failed to update movie', error: err });
+            } else if (!updatedMovie) {
+                res.status(404).json({ success: false, message: 'Movie not found' });
+            } else {
+                res.status(200).json({ success: true, message: 'Movie updated successfully', movie: updatedMovie });
+            }
+        });
+    })
+
+    .delete(requireAuth, function(req, res) {
+        var title = req.params.title;
+        Movie.findOneAndDelete({ title: title }, function(err, deletedMovie) {
+            if (err) {
+                res.status(400).json({ success: false, message: 'Failed to delete movie', error: err });
+            } else if (!deletedMovie) {
+                res.status(404).json({ success: false, message: 'Movie not found' });
+            } else {
+                res.status(200).json({ success: true, message: 'Movie deleted successfully', movie: deletedMovie });
+            }
+        });
+    });
+
 app.use('/', router);
 app.listen(process.env.PORT || 8080);
 module.exports = app; // for testing only
