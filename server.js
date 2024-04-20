@@ -121,16 +121,83 @@ router.route('/movies')
 router.route('/movies/:title')
     .get(requireAuth, function(req, res) {
         var title = req.params.title;
+        var includeReviews = req.query.reviews === 'true'; // Check if reviews are requested
+
+        if (includeReviews) {
+
+            // Aggregate the movie and review collections
+            Movie.aggregate([
+                {
+                    $match: { title: title } // Find movie
+                },
+                {
+                    $lookup: {
+                        from: "reviews", 
+                        localField: "_id", 
+                        foreignField: "movieId", 
+                        as: "reviews" 
+                    }
+                }
+            ]).exec(function (err, result) {
+                if (err) {
+                    res.status(500).json({ success: false, message: 'Internal server error', error: err });
+                } else if (!result || result.length === 0) {
+                    res.status(404).json({ success: false, message: 'Movie not found' });
+                } else {
+                    res.json({ success: true, movie: result[0] }); 
+                }
+            });
+
+        } else { // Just fetch movie if no review wanted
+            Movie.findOne({ title: title }, function(err, movie) {
+                if (err) {
+                    res.status(500).json({ success: false, message: 'Internal server error', error: err });
+                } else if (!movie) {
+                    res.status(404).json({ success: false, message: 'Movie not found' });
+                } else {
+                    res.status(200).json({ success: true, movie: movie });
+                }
+            });
+        }
+    })
+
+
+    .post(requireAuth, function(req, res) {
+        var title = req.params.title;
+        var reviewData = {
+            username: req.body.username,
+            review: req.body.review,
+            rating: req.body.rating
+        };
+
+        // First, find the movie to ensure it exists and get its ID
         Movie.findOne({ title: title }, function(err, movie) {
             if (err) {
                 res.status(500).json({ success: false, message: 'Internal server error', error: err });
             } else if (!movie) {
                 res.status(404).json({ success: false, message: 'Movie not found' });
+
+            // Post review now that movie has been found
             } else {
-                res.status(200).json({ success: true, movie: movie });
+                var newReview = new Review({
+                    movieId: movie._id,
+                    username: reviewData.username,
+                    review: reviewData.review,
+                    rating: reviewData.rating
+                });
+                newReview.save(function(err) {
+                    if (err) {
+                        res.status(500).json({ success: false, message: 'Failed to save review', error: err });
+                    } else {
+                        res.status(201).json({ success: true, message: 'Review Created!', review: newReview });
+                    }
+                });
             }
         });
     })
+
+
+
 
     .put(requireAuth, function(req, res) {
         var title = req.params.title;
