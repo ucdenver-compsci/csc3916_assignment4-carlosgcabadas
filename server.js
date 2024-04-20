@@ -170,7 +170,6 @@ router.route('/movies/:title')
             rating: req.body.rating
         };
 
-        // First, find the movie to ensure it exists and get its ID
         Movie.findOne({ title: title }, function(err, movie) {
             if (err) {
                 res.status(500).json({ success: false, message: 'Internal server error', error: err });
