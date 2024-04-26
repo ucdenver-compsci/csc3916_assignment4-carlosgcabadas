@@ -118,9 +118,9 @@ router.route('/movies')
 
 
 // Routes but by title
-router.route('/movies/:title')
+router.route('/movies/:id')
     .get(requireAuth, function(req, res) {
-        var title = req.params.title;
+        var movieId = req.params.id;
         var includeReviews = req.query.reviews === 'true'; // Check if reviews are requested
 
         if (includeReviews) {
@@ -128,19 +128,19 @@ router.route('/movies/:title')
             // Aggregate the movie and review collections
             Movie.aggregate([
                 {
-                    $match: { title: title } // Find movie
+                    $match: { _id: movieId } // Find movie
                 },
                 {
                     $lookup: {
                         from: "reviews", 
                         localField: "_id", 
                         foreignField: "movieId", 
-                        as: "reviews" 
+                        as: "movieReviews" 
                     }
                 },
                 {
                     $addFields: {
-                      avgRating: { $avg: '$reviews.rating' }
+                      avgRating: { $avg: '$movieReviews.rating' }
                     }
                 },
                 {
