@@ -120,6 +120,36 @@ router.route('/movies')
 
 // Routes but by movie ID
 router.route('/movies/:id')
+    .post(requireAuth, function(req, res) {
+        const movieId = req.params.id; // Get the movie ID from the URL parameter
+
+        // First, check if the movie exists to link the review to it
+        Movie.findById(movieId, function(err, movie) {
+            if (err) {
+                return res.status(500).json({ success: false, message: 'Error checking the movie', error: err });
+            }
+
+            if (!movie) {
+                return res.status(404).json({ success: false, message: 'Movie not found' });
+            }
+
+            // If the movie exists, create a new review
+            const newReview = new Review({
+                movieId: movieId,
+                username: req.user.username, // Assuming the username is included in the JWT token
+                review: req.body.review,
+                rating: req.body.rating
+            });
+
+            // Validate and save the new review
+            newReview.save(function(err, review) {
+                if (err) {
+                    return res.status(400).json({ success: false, message: 'Failed to add review', error: err });
+                }
+                res.status(201).json({ success: true, message: 'Review added successfully', review: review });
+            });
+        });
+    })
     .get(requireAuth, function(req, res) {
         const movieId = mongoose.Types.ObjectId(req.params.id); // Convert the string ID to a MongoDB ObjectId
 
