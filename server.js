@@ -121,92 +121,35 @@ router.route('/movies')
 // Routes but by movie ID
 router.route('/movies/:id')
     .get(requireAuth, function(req, res) {
-        var movieId = req.params.id;
-        var includeReviews = req.query.reviews === 'true';
+        const movieId = mongoose.Types.ObjectId(req.params.id); // Convert the string ID to a MongoDB ObjectId
 
-        if (includeReviews) {
-            Movie.aggregate([
-                { $match: { _id: mongoose.Types.ObjectId(movieId) } },
-                { $lookup: {
-                    from: "reviews",
-                    localField: "_id",
-                    foreignField: "movieId",
-                    as: "movieReviews"
-                }},
-                { $addFields: {
+        const aggregate = [
+            {
+                $match: { _id: movieId }
+            },
+            {
+                $lookup: {
+                    from: 'reviews',
+                    localField: '_id',
+                    foreignField: 'movieId',
+                    as: 'movieReviews'
+                }
+            },
+            {
+                $addFields: {
                     avgRating: { $avg: '$movieReviews.rating' }
-                }},
-                { $sort: { avgRating: -1 } }
-            ]).exec(function (err, result) {
-                if (err) {
-                    res.status(500).json({ success: false, message: 'Internal server error', error: err });
-                } else if (!result || result.length === 0) {
-                    res.status(404).json({ success: false, message: 'Movie not found' });
-                } else {
-                    res.json({ success: true, movie: result[0] });
                 }
-            });
-        } else {
-            Movie.findById(movieId).exec((err, movie) => {
-                if (err) {
-                    res.status(500).json({ success: false, message: 'Internal server error', error: err });
-                } else if (!movie) {
-                    res.status(404).json({ success: false, message: 'Movie not found' });
-                } else {
-                    res.json({ success: true, movie: movie });
-                }
-            });
-        }
-    })
-    .put(requireAuth, function(req, res) {
-        var movieId = req.params.id;
-        Movie.findByIdAndUpdate(movieId, req.body, { new: true }, function(err, updatedMovie) {
-            if (err) {
-                res.status(400).json({ success: false, message: 'Failed to update movie', error: err });
-            } else if (!updatedMovie) {
-                res.status(404).json({ success: false, message: 'Movie not found' });
-            } else {
-                res.status(200).json({ success: true, message: 'Movie updated successfully', movie: updatedMovie });
             }
-        });
-    })
-    .delete(requireAuth, function(req, res) {
-        var movieId = req.params.id;
-        Movie.findByIdAndDelete(movieId, function(err, deletedMovie) {
-            if (err) {
-                res.status(400).json({ success: false, message: 'Failed to delete movie', error: err });
-            } else if (!deletedMovie) {
-                res.status(404).json({ success: false, message: 'Movie not found' });
-            } else {
-                res.status(200).json({ success: true, message: 'Movie deleted successfully', movie: deletedMovie });
-            }
-        });
-    })
-    .post(requireAuth, function(req, res) {
-        // First, find the movie to ensure it exists
-        Movie.findById(req.params.movieId, function(err, movie) {
-            if (err) {
-                res.status(500).json({ success: false, message: 'Error searching for movie', error: err });
-            } else if (!movie) {
-                res.status(404).json({ success: false, message: 'Movie not found' });
-            } else {
-                // Movie exists, so create the review
-                var review = new Review({
-                    movieId: req.params.movieId,
-                    username: req.body.username, // Assume the username comes from request body
-                    review: req.body.review,
-                    rating: req.body.rating
-                });
+        ];
 
-                // Save the review
-                review.save(function(err, savedReview) {
-                    if (err) {
-                        res.status(400).json({ success: false, message: 'Error posting review', error: err });
-                    } else {
-                        res.status(201).json({ success: true, message: 'Review added successfully', review: savedReview });
-                    }
-                });
+        Movie.aggregate(aggregate).exec((err, result) => {
+            if (err) {
+                return res.status(500).json({ success: false, message: 'Failed to retrieve movie', error: err });
             }
+            if (result.length === 0) {
+                return res.status(404).json({ success: false, message: 'Movie not found' });
+            }
+            res.json({ success: true, movie: result[0] }); // Assuming the aggregation returns exactly one document
         });
     });
 
