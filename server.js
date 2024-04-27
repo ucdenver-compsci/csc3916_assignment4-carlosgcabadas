@@ -125,7 +125,7 @@ router.route('/movies/:id')
 
         if (includeReviews) {
             Movie.aggregate([
-                { $match: { _id: mongoose.Types.ObjectId(movieId) } },
+                { $match: { _id: movieId } },
                 { $lookup: {
                     from: "reviews",
                     localField: "_id",
