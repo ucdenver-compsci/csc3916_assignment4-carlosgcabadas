@@ -117,99 +117,49 @@ router.route('/movies')
 
 
 
-// Routes but by title
+// Routes but by movie ID
 router.route('/movies/:id')
     .get(requireAuth, function(req, res) {
         var movieId = req.params.id;
-        var includeReviews = req.query.reviews === 'true'; // Check if reviews are requested
+        var includeReviews = req.query.reviews === 'true';
 
         if (includeReviews) {
-
-            // Aggregate the movie and review collections
             Movie.aggregate([
-                {
-                    $match: { _id: mongoose.Types.ObjectId(movieId) } // Find movie
-                },
-                {
-                    $lookup: {
-                        from: "reviews", 
-                        localField: "_id", 
-                        foreignField: "movieId", 
-                        as: "movieReviews" 
-                    }
-                },
-                {
-                    $addFields: {
-                      avgRating: { $avg: '$movieReviews.rating' }
-                    }
-                },
-                {
-                    $sort: { avgRating: -1 }
-                }
+                { $match: { _id: mongoose.Types.ObjectId(movieId) } },
+                { $lookup: {
+                    from: "reviews",
+                    localField: "_id",
+                    foreignField: "movieId",
+                    as: "movieReviews"
+                }},
+                { $addFields: {
+                    avgRating: { $avg: '$movieReviews.rating' }
+                }},
+                { $sort: { avgRating: -1 } }
             ]).exec(function (err, result) {
                 if (err) {
                     res.status(500).json({ success: false, message: 'Internal server error', error: err });
                 } else if (!result || result.length === 0) {
                     res.status(404).json({ success: false, message: 'Movie not found' });
                 } else {
-                    res.json({ success: true, movie: result[0] }); 
+                    res.json({ success: true, movie: result[0] });
                 }
             });
-
         } else {
-            // Fetch the movie without reviews using ID
             Movie.findById(movieId).exec((err, movie) => {
                 if (err) {
                     res.status(500).json({ success: false, message: 'Internal server error', error: err });
                 } else if (!movie) {
                     res.status(404).json({ success: false, message: 'Movie not found' });
                 } else {
-                    res.json({ success: true, movie });
+                    res.json({ success: true, movie: movie });
                 }
             });
         }
     })
-
-
-    .post(requireAuth, function(req, res) {
-        var title = req.params.title;
-        var reviewData = {
-            username: req.body.username,
-            review: req.body.review,
-            rating: req.body.rating
-        };
-
-        Movie.findOne({ title: title }, function(err, movie) {
-            if (err) {
-                res.status(500).json({ success: false, message: 'Internal server error', error: err });
-            } else if (!movie) {
-                res.status(404).json({ success: false, message: 'Movie not found' });
-
-            // Post review now that movie has been found
-            } else {
-                var newReview = new Review({
-                    movieId: movie._id,
-                    username: reviewData.username,
-                    review: reviewData.review,
-                    rating: reviewData.rating
-                });
-                newReview.save(function(err) {
-                    if (err) {
-                        res.status(500).json({ success: false, message: 'Failed to save review', error: err });
-                    } else {
-                        res.status(201).json({ success: true, message: 'Review Created!', review: newReview });
-                    }
-                });
-            }
-        });
-    })
-
-
-
-
     .put(requireAuth, function(req, res) {
-        var title = req.params.title;
-        Movie.findOneAndUpdate({ title: title }, req.body, { new: true }, function(err, updatedMovie) {
+        var movieId = req.params.id;
+        Movie.findByIdAndUpdate(movieId, req.body, { new: true }, function(err, updatedMovie) {
             if (err) {
                 res.status(400).json({ success: false, message: 'Failed to update movie', error: err });
             } else if (!updatedMovie) {
@@ -219,10 +169,9 @@ router.route('/movies/:id')
             }
         });
     })
-
     .delete(requireAuth, function(req, res) {
-        var title = req.params.title;
-        Movie.findOneAndDelete({ title: title }, function(err, deletedMovie) {
+        var movieId = req.params.id;
+        Movie.findByIdAndDelete(movieId, function(err, deletedMovie) {
             if (err) {
                 res.status(400).json({ success: false, message: 'Failed to delete movie', error: err });
             } else if (!deletedMovie) {
@@ -232,6 +181,7 @@ router.route('/movies/:id')
             }
         });
     });
+
 
 app.use('/', router);
 app.listen(process.env.PORT || 8080);
