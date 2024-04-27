@@ -121,9 +121,8 @@ router.route('/movies')
 // Routes but by movie ID
 router.route('/movies/:id')
     .post(requireAuth, function(req, res) {
-        const movieId = req.params.id; // Get the movie ID from the URL parameter
+        const movieId = req.params.id; // Get movie ID
 
-        // First, check if the movie exists to link the review to it
         Movie.findById(movieId, function(err, movie) {
             if (err) {
                 return res.status(500).json({ success: false, message: 'Error checking the movie', error: err });
@@ -136,7 +135,7 @@ router.route('/movies/:id')
             // If the movie exists, create a new review
             const newReview = new Review({
                 movieId: movieId,
-                username: req.body.username, // Assuming the username is included in the JWT token
+                username: req.body.username, 
                 review: req.body.review,
                 rating: req.body.rating
             });
@@ -179,7 +178,7 @@ router.route('/movies/:id')
             if (result.length === 0) {
                 return res.status(404).json({ success: false, message: 'Movie not found' });
             }
-            res.json({ success: true, movie: result[0] }); // Assuming the aggregation returns exactly one document
+            res.json({ success: true, movie: result[0] }); 
         });
     });
 
