@@ -156,14 +156,15 @@ router.route('/movies/:id')
                 }
             });
 
-        } else { // Just fetch movie if no review wanted
-            Movie.findOne({ title: title }, function(err, movie) {
+        } else {
+            // Fetch the movie without reviews using ID
+            Movie.findById(movieId).exec((err, movie) => {
                 if (err) {
                     res.status(500).json({ success: false, message: 'Internal server error', error: err });
                 } else if (!movie) {
                     res.status(404).json({ success: false, message: 'Movie not found' });
                 } else {
-                    res.status(200).json({ success: true, movie: movie });
+                    res.json({ success: true, movie });
                 }
             });
         }
