@@ -136,7 +136,7 @@ router.route('/movies/:id')
             // If the movie exists, create a new review
             const newReview = new Review({
                 movieId: movieId,
-                username: req.user.username, // Assuming the username is included in the JWT token
+                username: req.body.username, // Assuming the username is included in the JWT token
                 review: req.body.review,
                 rating: req.body.rating
             });
