@@ -181,6 +181,33 @@ router.route('/movies/:id')
                 res.status(200).json({ success: true, message: 'Movie deleted successfully', movie: deletedMovie });
             }
         });
+    })
+    .post(requireAuth, function(req, res) {
+        // First, find the movie to ensure it exists
+        Movie.findById(req.params.movieId, function(err, movie) {
+            if (err) {
+                res.status(500).json({ success: false, message: 'Error searching for movie', error: err });
+            } else if (!movie) {
+                res.status(404).json({ success: false, message: 'Movie not found' });
+            } else {
+                // Movie exists, so create the review
+                var review = new Review({
+                    movieId: req.params.movieId,
+                    username: req.body.username, // Assume the username comes from request body
+                    review: req.body.review,
+                    rating: req.body.rating
+                });
+
+                // Save the review
+                review.save(function(err, savedReview) {
+                    if (err) {
+                        res.status(400).json({ success: false, message: 'Error posting review', error: err });
+                    } else {
+                        res.status(201).json({ success: true, message: 'Review added successfully', review: savedReview });
+                    }
+                });
+            }
+        });
     });
 
 
