@@ -21,8 +21,8 @@ var MovieSchema = new Schema({
   });
 
 // return the model
-module.exports = mongoose.model('Movie', MovieSchema);
-
+var Movie = mongoose.model('Movie', MovieSchema);
+module.exports = Movie;
 
 // Add five movies to the database
 Movie.countDocuments((err, count) => {
