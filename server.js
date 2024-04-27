@@ -16,6 +16,7 @@ var Movie = require('./Movies');
 var Review = require('./Reviews');
 
 var app = express();
+var mongoose = require('mongoose');
 app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
@@ -125,7 +126,7 @@ router.route('/movies/:id')
 
         if (includeReviews) {
             Movie.aggregate([
-                { $match: { _id: movieId } },
+                { $match: { _id: mongoose.Types.ObjectId(movieId) } },
                 { $lookup: {
                     from: "reviews",
                     localField: "_id",
